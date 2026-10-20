@@ -5,9 +5,10 @@ import random
 import string
 import time
 import urllib.request
+from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 app = FastAPI()
 SUITS = "♠♥♦♣"
@@ -41,6 +42,15 @@ def stamp(g):
 def save(code, g):
     stamp(g)
     redis("SET", "tp:" + code, json.dumps(g), "EX", 86400)
+
+
+@app.get("/", include_in_schema=False)
+async def home():
+    here = Path(__file__).resolve().parent
+    for p in (here.parent / "public" / "index.html", Path("public/index.html"), here / "index.html"):
+        if p.exists():
+            return HTMLResponse(p.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>public/index.html is missing from the repo</h1>", status_code=500)
 
 
 def err(msg, status=400):
